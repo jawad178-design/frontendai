@@ -43,9 +43,12 @@ export function RecentActivity({ userId, limit = 10 }: RecentActivityProps) {
         {
           id: '1',
           type: 'inspection_started',
+          title: 'فحص جديد',
           description: 'تم إنشاء طلب فحص جديد',
           timestamp: new Date().toISOString(),
-          user: 'مدير النظام'
+          user: {
+            name: 'مدير النظام'
+          }
         }
       ])
       
