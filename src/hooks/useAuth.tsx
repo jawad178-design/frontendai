@@ -3,8 +3,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 
-// API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+// API Configuration - Production URLs for deployment
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jawad12k-fahsna-backend.hf.space'
 
 interface User {
   id: string
