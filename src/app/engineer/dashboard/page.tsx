@@ -1,244 +1,178 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { useAuth } from '../../../hooks/useAuth'
 import { DashboardLayout } from '../../../components/layout/DashboardLayout'
-import { StatsCard } from '../../../components/dashboard/StatsCard'
-import { InspectionRequestCard } from '../../../components/inspection/InspectionRequestCard'
-import { RecentActivity } from '../../../components/dashboard/RecentActivity'
-import { 
-  BuildingOfficeIcon, 
-  ClockIcon, 
-  CheckCircleIcon, 
-  ExclamationTriangleIcon,
-  PlusIcon
-} from '@heroicons/react/24/outline'
-import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
+import { Button } from '../../../components/ui/Button'
+import { useRouter } from 'next/navigation'
 
-interface DashboardStats {
-  totalInspections: number
-  pendingInspections: number
-  completedInspections: number
-  totalRevenue: number
-}
-
-interface InspectionRequest {
+interface Inspection {
   id: string
-  client_name: string
   property_address: string
-  inspection_type: string
-  scheduled_date: string
+  property_type: string
   status: string
-  priority: string
+  scheduled_date: string
+  total_cost: number
+  created_at: string
 }
 
-export default function EngineerDashboard() {
-  const { user, loading } = useAuth()
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [recentRequests, setRecentRequests] = useState<InspectionRequest[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+export default function InspectionsList() {
+  const router = useRouter()
+  const [inspections, setInspections] = useState<Inspection[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (user?.user_type === 'engineer') {
-      fetchDashboardData()
-    }
-  }, [user])
+    fetchInspections()
+  }, [])
 
-  const fetchDashboardData = async () => {
+  const fetchInspections = async () => {
     try {
-      setIsLoading(true)
-      console.log('Starting dashboard data fetch...')
-      
-      // For testing, disable API calls that don't exist yet
-      console.log('Dashboard API calls disabled for testing')
-      
-      // Set dummy data for testing
-      const dummyStats = {
-        totalInspections: 5,
-        completedInspections: 3,
-        pendingInspections: 2,
-        totalRevenue: 12500
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jawad12k-fahsna-backend.hf.space'
+      const response = await fetch(`${API_BASE_URL}/api/v1/inspections/requests/`)
+      if (response.ok) {
+        const data = await response.json()
+        setInspections(data)
+      } else {
+        console.error('Failed to fetch inspections:', response.statusText)
       }
-      console.log('Setting dummy stats:', dummyStats)
-      setStats(dummyStats)
-
-      // Fetch recent inspection requests (this API exists)
-      console.log('Fetching recent requests...')
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
-      const requestsResponse = await fetch(`${API_BASE_URL}/api/v1/inspections/requests/?limit=5`)
-      
-      if (requestsResponse.ok) {
-        const requestsData = await requestsResponse.json()
-        console.log('Requests data:', requestsData)
-        setRecentRequests(requestsData.results || [])
-      }
-
-      console.log('Dashboard data fetch completed')
     } catch (error) {
-      console.error('Error fetching dashboard data:', error)
+      console.error('Error fetching inspections:', error)
     } finally {
-      console.log('Setting isLoading to false')
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  if (loading || isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <LoadingSpinner size="lg" />
-        </div>
-      </DashboardLayout>
-    )
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ar-SA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   }
 
-  if (!user || user.user_type !== 'engineer') {
-    return (
-      <DashboardLayout>
-        <div className="text-center py-12">
-          <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-warning-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">غير مخول</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            هذه الصفحة مخصصة للمهندسين فقط
-          </p>
-        </div>
-      </DashboardLayout>
-    )
+  const getStatusColor = (status: string) => {
+    const colors = {
+      'pending': 'bg-yellow-100 text-yellow-800',
+      'confirmed': 'bg-blue-100 text-blue-800',
+      'in_progress': 'bg-purple-100 text-purple-800',
+      'completed': 'bg-green-100 text-green-800',
+      'cancelled': 'bg-red-100 text-red-800',
+    }
+    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+  }
+
+  const getStatusText = (status: string) => {
+    const texts = {
+      'pending': 'قيد الانتظار',
+      'confirmed': 'مؤكد',
+      'in_progress': 'قيد التنفيذ',
+      'completed': 'مكتمل',
+      'cancelled': 'ملغى',
+    }
+    return texts[status as keyof typeof texts] || status
   }
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              مرحباً، {user.first_name} {user.last_name}
-            </h1>
-            <p className="text-gray-600">
-              إليك نظرة عامة على نشاطك كمهندس فاحص
-            </p>
-          </div>
-          
-          <Link 
-            href="/engineer/inspections/new"
-            className="btn-primary inline-flex items-center"
+          <h1 className="text-2xl font-bold text-gray-900">قائمة الفحوصات</h1>
+          <Button 
+            onClick={() => router.push('/engineer/inspections/new')}
           >
-            <PlusIcon className="w-5 h-5 ml-2" />
-            فحص جديد
-          </Link>
+            إنشاء فحص جديد
+          </Button>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatsCard
-            title="إجمالي الفحوصات"
-            value={stats?.totalInspections || 0}
-            icon={BuildingOfficeIcon}
-            color="primary"
-          />
-          
-          <StatsCard
-            title="الفحوصات المعلقة"
-            value={stats?.pendingInspections || 0}
-            icon={ClockIcon}
-            color="warning"
-          />
-          
-          <StatsCard
-            title="الفحوصات المكتملة"
-            value={stats?.completedInspections || 0}
-            icon={CheckCircleIcon}
-            color="success"
-          />
-          
-          <StatsCard
-            title="نسبة الدقة"
-            value={`${((stats?.completedInspections || 0) / (stats?.totalInspections || 1) * 100).toFixed(1)}%`}
-            icon={ExclamationTriangleIcon}
-            color="secondary"
-          />
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Inspection Requests */}
-          <div className="card">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                طلبات الفحص الحديثة
-              </h2>
-              <Link 
-                href="/engineer/inspections"
-                className="text-primary-600 hover:text-primary-500 text-sm font-medium"
-              >
-                عرض الكل
-              </Link>
-            </div>
-            
-            <div className="space-y-4">
-              {recentRequests.length > 0 ? (
-                recentRequests.map((request) => (
-                  <InspectionRequestCard 
-                    key={request.id} 
-                    request={request}
-                    onUpdate={fetchDashboardData}
-                  />
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <BuildingOfficeIcon className="mx-auto h-12 w-12 text-gray-300" />
-                  <p className="mt-2">لا توجد طلبات فحص حديثة</p>
-                </div>
-              )}
-            </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">جاري تحميل الفحوصات...</p>
           </div>
-
-          {/* Recent Activity */}
-          <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              النشاط الأخير
-            </h2>
-            <RecentActivity userId={user.id} />
+        ) : inspections.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600 mb-4">لا توجد فحوصات حتى الآن</p>
+            <Button 
+              onClick={() => router.push('/engineer/inspections/new')}
+            >
+              إنشاء أول فحص
+            </Button>
           </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            إجراءات سريعة
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link 
-              href="/engineer/inspections/new"
-              className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
-            >
-              <PlusIcon className="h-8 w-8 text-primary-600 mb-2" />
-              <h3 className="font-medium text-gray-900">بدء فحص جديد</h3>
-              <p className="text-sm text-gray-500">قم بإنشاء طلب فحص جديد</p>
-            </Link>
-            
-            <Link 
-              href="/engineer/reports"
-              className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
-            >
-              <BuildingOfficeIcon className="h-8 w-8 text-primary-600 mb-2" />
-              <h3 className="font-medium text-gray-900">التقارير</h3>
-              <p className="text-sm text-gray-500">عرض وإدارة التقارير</p>
-            </Link>
-            
-            <Link 
-              href="/engineer/profile"
-              className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
-            >
-              <CheckCircleIcon className="h-8 w-8 text-primary-600 mb-2" />
-              <h3 className="font-medium text-gray-900">الملف الشخصي</h3>
-              <p className="text-sm text-gray-500">تحديث معلوماتك الشخصية</p>
-            </Link>
+        ) : (
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    العقار
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    نوع العقار
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    الحالة
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    الموعد المجدول
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    التكلفة
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    تاريخ الإنشاء
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    الإجراءات
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {Array.isArray(inspections) ? inspections.map((inspection) => (
+                  <tr key={inspection.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {inspection.property_address}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {inspection.property_type === 'residential' ? 'سكني' :
+                       inspection.property_type === 'commercial' ? 'تجاري' :
+                       inspection.property_type === 'industrial' ? 'صناعي' : 'مختلط'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(inspection.status)}`}>
+                        {getStatusText(inspection.status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {inspection.scheduled_date ? formatDate(inspection.scheduled_date) : 'لم يحدد'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {inspection.total_cost} ريال
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatDate(inspection.created_at)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Button
+                        onClick={() => router.push(`/engineer/inspections/${inspection.id}`)}
+                        variant="secondary"
+                        size="sm"
+                      >
+                        عرض التفاصيل
+                      </Button>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                      لا توجد فحوصات متاحة
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
+        )}
       </div>
     </DashboardLayout>
   )
