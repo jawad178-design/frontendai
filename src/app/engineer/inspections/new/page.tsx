@@ -78,6 +78,54 @@ const INSPECTION_TYPES = [
   { value: 'hvac', label: 'فحص التكييف والتهوية' },
 ]
 
+// Default inspection types if API fails
+const getDefaultInspectionTypes = (): InspectionType[] => {
+  return [
+    {
+      id: 1,
+      name: 'فحص المباني السكنية',
+      name_en: 'Residential Building Inspection',
+      description: 'فحص شامل للمباني السكنية يشمل الهيكل والكهرباء والسانتكري',
+      price: 1500
+    },
+    {
+      id: 2,
+      name: 'فحص المباني التجارية',
+      name_en: 'Commercial Building Inspection', 
+      description: 'فحص المباني التجارية والمكاتب والمحلات التجارية',
+      price: 2500
+    },
+    {
+      id: 3,
+      name: 'فحص الهيكل الإنشائي',
+      name_en: 'Structural Inspection',
+      description: 'فحص متخصص للهيكل الإنشائي والأساسات',
+      price: 2000
+    },
+    {
+      id: 4,
+      name: 'فحص السلامة والحماية',
+      name_en: 'Safety Inspection',
+      description: 'فحص أنظمة السلامة والحماية من الحريق',
+      price: 1200
+    },
+    {
+      id: 5,
+      name: 'فحص ما قبل الشراء',
+      name_en: 'Pre-Purchase Inspection',
+      description: 'فحص شامل للعقار قبل الشراء',
+      price: 1000
+    },
+    {
+      id: 6,
+      name: 'فحص دوري للصيانة',
+      name_en: 'Maintenance Inspection',
+      description: 'فحص دوري لتحديد احتياجات الصيانة',
+      price: 800
+    }
+  ]
+}
+
 const PROPERTY_TYPES = [
   { value: 'residential', label: 'سكني' },
   { value: 'commercial', label: 'تجاري' },
@@ -132,12 +180,23 @@ export default function NewInspection() {
           // Extract results from paginated response
           const types = data.results || data
           console.log('Inspection types:', types)
-          setInspectionTypes(types)
+          
+          // If API returns empty array, use default types
+          if (Array.isArray(types) && types.length > 0) {
+            setInspectionTypes(types)
+          } else {
+            console.log('API returned empty results, using default inspection types')
+            setInspectionTypes(getDefaultInspectionTypes())
+          }
         } else {
           console.error('Failed to fetch inspection types:', response.status)
+          // Use default inspection types if API fails
+          setInspectionTypes(getDefaultInspectionTypes())
         }
       } catch (error) {
         console.error('Error fetching inspection types:', error)
+        // Use default inspection types if API fails
+        setInspectionTypes(getDefaultInspectionTypes())
       }
     }
     
