@@ -123,7 +123,7 @@ export default function NewInspection() {
     const fetchInspectionTypes = async () => {
       try {
         console.log('Fetching inspection types...')
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jawad12k-fahsna-backend.hf.space'
         const response = await fetch(`${API_BASE_URL}/api/v1/inspections/types/`)
         console.log('Response status:', response.status)
         if (response.ok) {
@@ -157,7 +157,7 @@ export default function NewInspection() {
 
       // Check if AI service is available first
       console.log('Checking AI service availability...')
-      const AI_API_URL = process.env.NEXT_PUBLIC_AI_API_URL || 'http://127.0.0.1:8001'
+      const AI_API_URL = process.env.NEXT_PUBLIC_AI_API_URL || 'https://jawad12k-aiadashboard.hf.space'
       const healthResponse = await fetch(`${AI_API_URL}/health`)
       if (!healthResponse.ok) {
         throw new Error('AI service is not available')
@@ -295,7 +295,7 @@ export default function NewInspection() {
           )
         )
 
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jawad12k-fahsna-backend.hf.space'
         const response = await fetch(`${API_BASE_URL}/api/v1/inspections/requests/${inspectionId}/upload/`, {
           method: 'POST',
           // Remove Authorization header for testing without authentication
@@ -366,7 +366,7 @@ export default function NewInspection() {
 
       console.log('Sending inspection data:', inspectionData)
 
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jawad12k-fahsna-backend.hf.space'
       const response = await fetch(`${API_BASE_URL}/api/v1/inspections/requests/create/`, {
         method: 'POST',
         headers: {
